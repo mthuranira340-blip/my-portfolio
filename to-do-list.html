@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-Do Dashboard</title>
+
+<style>
+:root {
+    --primary: #3b82f6;
+    --glass: rgba(255,255,255,0.1);
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    color: white;
+    background-size: cover;
+    background-position: center;
+}
+
+/* Center screens */
+.screen {
+    display: none;
+}
+
+.active {
+    display: block;
+}
+
+/* Glass UI */
+.container {
+    backdrop-filter: blur(15px);
+    background: var(--glass);
+    margin: 80px auto;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 15px;
+    text-align: center;
+}
+
+input, button {
+    padding: 10px;
+    margin: 8px;
+    border: none;
+    border-radius: 8px;
+    width: 80%;
+}
+
+button {
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+}
+
+/* Dashboard */
+#dashboard .container {
+    max-width: 600px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    background: rgba(0,0,0,0.4);
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.progress-bar {
+    height: 10px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+}
+
+.progress {
+    height: 100%;
+    background: limegreen;
+    width: 0%;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="screen active">
+    <div class="container">
+        <h2>Login</h2>
+        <input type="text" id="loginUser" placeholder="Username">
+        <input type="password" id="loginPass" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p>Don't have an account?</p>
+        <button onclick="showRegister()">Register</button>
+    </div>
+</div>
+
+<!-- REGISTER -->
+<div id="register" class="screen">
+    <div class="container">
+        <h2>Register</h2>
+        <input type="text" id="regUser" placeholder="Username">
+        <input type="password" id="regPass" placeholder="Password">
+        <button onclick="register()">Create Account</button>
+        <button onclick="showLogin()">Back to Login</button>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="screen">
+    <div class="container">
+        <h2>To-Do Dashboard</h2>
+
+        <button onclick="logout()">Logout</button>
+        <br><br>
+
+        <!-- Wallpaper -->
+        <input type="file" accept="image/*" onchange="changeBackground(event)">
+
+        <hr>
+
+        <!-- Task input -->
+        <input type="text" id="taskInput" placeholder="Task">
+        <input type="date" id="deadline">
+        <button onclick="addTask()">Add</button>
+
+        <ul id="taskList"></ul>
+
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// SCREEN SWITCH
+function showLogin() {
+    setScreen("login");
+}
+function showRegister() {
+    setScreen("register");
+}
+function showDashboard() {
+    setScreen("dashboard");
+}
+function setScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+}
+
+// REGISTER
+function register() {
+    const user = regUser.value;
+    const pass = regPass.value;
+
+    if (!user || !pass) return alert("Fill all fields");
+
+    localStorage.setItem("user", user);
+    localStorage.setItem("pass", pass);
+
+    alert("Registered!");
+    showLogin();
+}
+
+// LOGIN
+function login() {
+    const user = loginUser.value;
+    const pass = loginPass.value;
+
+    if (user === localStorage.getItem("user") &&
+        pass === localStorage.getItem("pass")) {
+
+        showDashboard();
+    } else {
+        alert("Wrong credentials");
+    }
+}
+
+// LOGOUT
+function logout() {
+    showLogin();
+}
+
+// WALLPAPER
+function changeBackground(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = e => {
+        document.body.style.backgroundImage = `url('${e.target.result}')`;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+// ADD TASK
+function addTask() {
+    const text = taskInput.value;
+    const deadlineVal = deadline.value;
+
+    if (!text) return;
+
+    const li = document.createElement("li");
+
+    const span = document.createElement("span");
+    span.innerHTML = text + "<br><small>" + deadlineVal + "</small>";
+
+    const btn = document.createElement("button");
+    btn.innerText = "✔";
+    btn.onclick = () => {
+        li.style.textDecoration = "line-through";
+        li.setAttribute("done", "true");
+        updateProgress();
+    };
+
+    li.appendChild(span);
+    li.appendChild(btn);
+
+    li.setAttribute("deadline", deadlineVal);
+    li.setAttribute("done", "false");
+
+    taskList.appendChild(li);
+
+    taskInput.value = "";
+    updateProgress();
+}
+
+// PROGRESS
+function updateProgress() {
+    const tasks = document.querySelectorAll("#taskList li");
+    let done = 0;
+
+    tasks.forEach(t => {
+        if (t.getAttribute("done") === "true") done++;
+    });
+
+    const percent = tasks.length ? (done / tasks.length) * 100 : 0;
+    progress.style.width = percent + "%";
+}
+
+// OVERDUE
+setInterval(() => {
+    const today = new Date().toISOString().split("T")[0];
+    document.querySelectorAll("#taskList li").forEach(task => {
+        if (task.getAttribute("deadline") < today &&
+            task.getAttribute("done") === "false") {
+            task.style.background = "red";
+        }
+    });
+}, 3000);
+</script>
+
+</body>
+</html>
